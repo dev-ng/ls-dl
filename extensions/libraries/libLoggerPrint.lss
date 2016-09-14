@@ -1,0 +1,41 @@
+Option Public
+Option Declare
+Use "libLog"
+Class LoggerPrint As Logger
+	'------------------------------
+	Sub assert( msg As String, id As DynamicArguments )
+		Call me.output( {[ASSERT]     } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub Error( msg As String, id As DynamicArguments )
+		Call me.output( {[ERROR]      } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub warn( msg As String, id As DynamicArguments )
+		Call me.output( {[WARN]        } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub info( msg As String, id As DynamicArguments )
+		Call me.output( {[INFO]           } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub debug( msg As String, id As DynamicArguments )
+		Call me.output( {[DEBUG]      } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub verbose( msg As String, id As DynamicArguments )
+		Call me.output( {[VERBOSE] } & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Private Sub Output( msg As String )
+		Print CStr(Now()) & { } & msg
+	End Sub
+	'------------------------------
+	Private Function getModuleName( id As DynamicArguments ) As String
+		getModuleName = {[} & id.toString( {->} ) & {] }
+	End Function
+	'------------------------------
+End Class
+Sub libLoggerPrint_init()
+	registerModule "libLoggerPrint"
+End Sub
