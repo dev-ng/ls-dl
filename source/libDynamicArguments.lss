@@ -1,0 +1,65 @@
+Option Public
+Option Declare
+Class DynamicArguments
+	Private args() As Variant 'String, numbers or date-time
+	'------------------------------
+	Public Function count() As Integer
+		count = 0
+		ForAll a In me.args
+			count = UBound( me.args ) + 1
+			Exit Function
+		End ForAll
+	End Function
+	'------------------------------
+	Public Function in( v As Variant ) As DynamicArguments
+		ReDim Preserve me.args( me.count )
+		me.args( me.count -1 ) = v
+		Set me.in = me
+	End Function
+	'------------------------------
+	Function equals( args2 As DynamicArguments ) As Boolean
+		equals = False
+		
+		If args2 Is Nothing Then
+			Exit Function
+		End If
+		
+		If Not me.count = args2.count Then
+			Exit Function
+		End If
+		
+		If 0 = me.count Then
+			equals = True
+			Exit Function
+		End If
+		
+		Dim i As Integer
+		For i = 0 To me.count - 1
+			If Not DataType( me.args(i) ) = DataType( args2.args(i) ) Then
+				Exit Function
+			End If
+			
+			If Not me.args(i) = args2.args(i) Then
+				Exit Function
+			End If
+		Next
+		
+		equals = True
+	End Function
+	'------------------------------
+	Public Sub Delete
+		Erase me.args
+	End Sub
+	'------------------------------
+	Function toArray() As Variant
+		toArray = me.args()
+	End Function
+	'------------------------------
+	Function toString( separator As String ) As String
+		toString = Join( me.args, separator )
+	End Function
+	'------------------------------
+End Class
+Function args() As DynamicArguments
+	Set args = New DynamicArguments()
+End Function
