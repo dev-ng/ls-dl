@@ -1,0 +1,24 @@
+Option Public
+Option Declare
+'this library is loaded dynamically in "libTracer"
+'moved to a separate library to handle issue when extentions "*lsxlc" are not installed on Notes Client
+'see usage details in "libTracer"
+UseLSX "*lsxlc"
+Use "libTracer"
+Class StopwatchLSXLC As Stopwatch
+	Private startedAt As LCDatetime
+	'------------------------------
+	Sub start()
+		Set me.startedAt = New Lcdatetime()
+		Call me.startedAt.Setcurrent()
+	End Sub
+	'------------------------------
+	Function lap() As Long
+		Dim timeNow As LCDatetime
+		Set timeNow = New LCDatetime()
+		Call timeNow.setcurrent()
+		
+		lap = timeNow.Getdiff( me.startedAt, LCDTUNIT_HUNDREDTH )
+	End Function
+	'------------------------------
+End Class
