@@ -1,0 +1,175 @@
+Option Public
+Option Declare
+Use "libTestCase"
+Use "libLog"
+Class libLogTest As TestCase
+	Private o As LoggerTest
+	'------------------------------
+	Private Function runTest() As Variant
+		Call testAssert()
+		Call testLogLevels()
+	End Function
+	'------------------------------
+	Private Sub testAssert()
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_WARN )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "10:00:05 Assert test"
+		Call me.assertStringEquals( ",10:00:05 Assert test", o.testLoggerResult )
+		
+		Call setLogLevel( "ALL", LL_NONE )
+		Call tearDown()
+		Call setUp()
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "10:00:05 Assert test"
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		
+		Call setLogLevel( "ALL", LL_ASSERT )
+		Call tearDown()
+		Call setUp()
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "105 Assert test"
+		Call me.assertStringEquals( ",105 Assert test", o.testLoggerResult )
+	End Sub
+	'------------------------------
+	Private Sub testLogLevels()
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_NONE )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_ASSERT )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_ERROR )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_WARN )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error,warning", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_INFO )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error,warning,info", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_DEBUG )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error,warning,info,debug", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_VERBOSE )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error,warning,info,debug,verbose", o.testLoggerResult )
+		
+		Call tearDown()
+		Call setUp()
+		Call setLogLevel( "ALL", LL_ALL )
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		logAssert "assert"
+		logError "error"
+		logWarn "warning"
+		logInfo "info"
+		logDebug "debug"
+		logVerbose "verbose"
+		Call me.assertStringEquals( ",assert,error,warning,info,debug,verbose", o.testLoggerResult )
+	End Sub
+	'------------------------------
+	Private Sub setUp()
+		Set me.o = New LoggerTest()
+		me.o.testLoggerResult = ""
+		Call setLogger( me.o )
+	End Sub
+	'------------------------------
+	Private Sub tearDown()
+	End Sub
+	'------------------------------
+End Class
+Class LoggerTest As Logger
+	Public testLoggerResult As String
+	'------------------------------
+	Sub assert( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub Error( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub warn( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub info( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub debug( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub verbose( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Private Sub Output( msg As String )
+		me.testLoggerResult = me.testLoggerResult & {,} & msg
+	End Sub
+	'------------------------------
+End Class
