@@ -1,0 +1,383 @@
+Option Public
+Option Declare
+Use "libDynamicArguments"
+Use "libLog"
+'This lib helps to see trace of execution, number of calls to routines and time needed to complete routines
+'usage:
+'use method "traceIn" at the begin of every routine
+'use method "traceOut" at the end of every routine
+'to get the report use "getTraceReport" whenever you need it
+Private gl_tracer As TreeNodeTracer
+Private gl_tracerResources As TracerResources
+Public Const CLASS_TRACER = "TracerResources"
+Class Traceable As Loggable
+	'------------------------------
+	Private Sub traceIn()
+		Dim sProc As String
+		Dim sModule As String
+		sModule = getModuleName( GetThreadInfo(11) )
+		sProc = GetThreadInfo(10)
+		Dim className As String
+		className = TypeName( Me )
+		
+		Call getTracer().traceIn( args.in( sModule ).in( className ).in( sProc ) )
+	End Sub
+	'------------------------------
+	Private Sub traceOut()
+		Dim sProc As String
+		Dim sModule As String
+		sModule = getModuleName( GetThreadInfo(11) )
+		sProc = GetThreadInfo(10)
+		Dim className As String
+		className = TypeName( Me )
+		
+		If gl_tracer Is Nothing Then
+			Exit Sub
+		End If
+		
+		Call getTracer().traceOut( args.in( sModule ).in( className ).in( sProc ) )
+	End Sub
+	'------------------------------
+End Class
+'interface
+Class Stopwatch
+	'------------------------------
+	Sub start()
+	End Sub
+	'------------------------------
+	Function lap() As Long
+	End Function
+	'------------------------------
+End Class
+Private Class StopwatchLS As Stopwatch
+	Private startedAt As Variant
+	'------------------------------
+	Sub start()
+		me.startedAt = Now()
+	End Sub
+	'------------------------------
+	Function lap() As Long
+		Dim timeNow As Variant
+		timeNow = Now()
+		
+		lap = ( timeNow - me.startedAt ) * 8640000 '* 24 * 60 * 60 * 100
+	End Function
+	'------------------------------
+End Class
+Private Class TracableRoutine
+	Public id As DynamicArguments
+	Private sw As Stopwatch
+	Public calls As Long
+	Public duration As Long
+	'------------------------------
+	Sub New( args As DynamicArguments )
+		Set me.id = args
+		Set me.sw = stopwatchfactory()
+		me.calls = 0
+		me.duration = 0
+	End Sub
+	'------------------------------
+	Sub In()
+		me.calls = me.calls + 1
+		Call me.sw.start()
+	End Sub
+	'------------------------------
+	Function out()
+		out = me.sw.lap()
+		me.duration = me.duration + out
+	End Function
+	'------------------------------
+End Class
+Private Class TreeNode
+	Public element As Variant
+	Public parent As TreeNode
+	Public nextElement As TreeNode
+	Public prevElement As TreeNode
+	Public firstChild As TreeNode
+	Private lastChild As TreeNode
+	'------------------------------
+	Sub New( argElement As Variant )
+		Set me.element = argElement
+		Set me.parent = Nothing
+		Set me.nextElement = Nothing
+		Set me.prevElement = Nothing
+		Set me.firstChild = Nothing
+		Set me.lastChild = Nothing
+	End Sub
+	'------------------------------
+	Public Function appendChild( argElement As Variant ) As TreeNode
+		Dim newNode As New TreeNode( argElement )
+		Set newNode.parent = Me
+		
+		If me.lastChild Is Nothing Then
+			Set me.firstChild = newNode
+			Set me.lastChild = newNode
+		Else
+			Set me.lastChild.nextElement = newNode
+			Set newNode.prevElement = me.lastChild
+			Set me.lastChild = newNode
+		End If
+		
+		Set appendChild = newNode
+	End Function
+	'------------------------------
+	Public Function iterator() As TreeNodeIterator
+		Set iterator = New TreeNodeIterator( Me )
+	End Function
+	'------------------------------
+End Class
+Private Class TreeNodeIterator
+	Private source As TreeNode
+	Private currentElement As TreeNode
+	'------------------------------
+	Public Sub New( argSource As TreeNode )
+		Set source = argSource
+		Set currentElement = source.firstChild
+	End Sub
+	'------------------------------
+	Function hasNext() As Boolean
+		hasNext = Not ( currentElement Is Nothing )
+	End Function
+	'------------------------------
+	Function getNext() As TreeNode
+		Set getNext = currentElement
+		Set currentElement = currentElement.nextElement
+	End Function
+	'------------------------------
+End Class
+Private Class TreeNodeTracer As Loggable
+	Private root As TreeNode
+	Private current As TreeNode
+	'------------------------------
+	Sub New()
+		Set me.root = Nothing
+		Set me.current = Nothing
+	End Sub
+	'------------------------------
+	Sub traceIn( id As DynamicArguments )
+		Call logDebug( getTracerResources().traceInText( id ) )
+		
+		'clean entry point - helpful for a button in a form for example, which can be clicked multiple times
+		If me.current Is Nothing And Not me.root Is Nothing Then
+			Delete me.root
+		End If
+		
+		If me.root Is Nothing Then
+			Dim tr As New TracableRoutine( id )
+			Set me.root = New TreeNode( tr )
+			Set me.current = me.root
+		Else
+			If me.current Is Nothing Then
+				Set me.current = me.root
+			Else
+				If me.current.firstChild Is Nothing Then
+					Dim tr1 As New TracableRoutine( id )
+					Set me.current = me.current.appendChild( tr1 )
+				Else
+					Dim iterator As TreeNodeIterator
+					Set iterator = me.current.iterator()
+					
+					Dim node As TreeNode
+					Dim tr2 As TracableRoutine
+					Do While iterator.hasNext()
+						Set node = iterator.getNext()
+						Set tr2 = node.element
+						
+						If id.equals( tr2.id ) Then
+							Set me.current = node
+							Exit Do
+						End If
+					Loop
+					
+					If Not me.current Is node Then
+						Dim tr3 As New TracableRoutine( id )
+						Set me.current = me.current.appendChild( tr3 )
+					End If
+				End If
+			End If
+		End If
+		
+		Call me.current.element.in()
+	End Sub
+	'------------------------------
+	Sub traceOut( id As DynamicArguments)
+		Call logDebug( getTracerResources().traceOutText( id ) )
+		
+		Dim tr As TracableRoutine
+		Set tr = me.current.element
+		Dim dur As Long
+		dur = tr.out()
+		Call logInfo( getTracerResources().durationText( id, dur ) )
+		
+		If me.current.parent Is Nothing Then
+			Set me.current = Nothing
+		Else
+			If Not id.equals( me.current.element.id ) Then
+				Set me.current = me.current.parent
+				Call me.traceOut( id )
+			Else
+				Set me.current = me.current.parent
+			End If
+		End If
+	End Sub
+	'------------------------------
+	Function getRoot() As TreeNode
+		Set getRoot = me.root
+	End Function
+	'------------------------------
+End Class
+Class TreeNodeTracerReport
+	Private root As TreeNode
+	'------------------------------
+	Sub New()
+		Set me.root = getTracer().getRoot()
+	End Sub
+	'------------------------------
+	Function getReport() As String
+		getReport = getR( me.root, {} )
+	End Function
+	'------------------------------
+	Private Function getR( argNode As TreeNode, argOffset As String ) As String
+		If Not argOffset = "" Then
+			getR = getTracerResources().reportNewLine()
+		End If
+		
+		Dim tr As TracableRoutine
+		Set tr = argNode.element
+		getR = getR & argOffset & reportLine( tr )
+		
+		Dim iterator As TreeNodeIterator
+		Set iterator = argNode.iterator
+		
+		Dim node As TreeNode
+		While iterator.hasNext()
+			Set node = iterator.getNext()
+			getR = getR & me.getR( node, argOffset & getTracerResources().reportIndent() )
+		Wend
+	End Function
+	'------------------------------
+	Private Function reportLine( tr As TracableRoutine ) As String
+		reportLine = getTracerResources().reportLine( tr.id, tr.calls, tr.duration )
+	End Function
+	'------------------------------
+End Class
+Class TracerResources
+	'------------------------------
+	Function getId( id As DynamicArguments ) As String
+		getId = id.toString( {->} )
+	End Function
+	'------------------------------
+	Function traceInText( id As DynamicArguments ) As String
+		traceInText = {--> } & me.getId( id )
+	End Function
+	'------------------------------
+	Function traceOutText( id As DynamicArguments ) As String
+		traceOutText = {<-- } & me.getId( id )
+	End Function
+	'------------------------------
+	Function durationText( id As DynamicArguments, dur As Long ) As String
+		durationText = me.getId( id ) & { - } & me.formatTime( dur )
+	End Function
+	'------------------------------
+	Function formatTime( argTimeInMs As Long ) As String
+		formatTime = formatTimeMs( argTimeInMs )
+	End Function
+	'------------------------------
+	Function reportLine( id As DynamicArguments, calls As Long, dur As Long ) As String
+		reportLine = id.toString( "->" ) & { calls: } & CStr( calls ) & { time: } & me.formatTime( dur )
+	End Function
+	'------------------------------
+	Function reportNewLine() As String
+		reportNewLine = Chr(10)
+	End Function
+	'------------------------------
+	Function reportIndent() As String
+		reportIndent = {    }
+	End Function
+	'------------------------------
+End Class
+Sub Initialize
+	registerModule "libTracer"
+End Sub
+Private Function getTracerResources() As TracerResources
+	If gl_tracerResources Is Nothing Then
+		Set gl_tracerResources = classInstanceFactory( LIB_CONFIG_NAME, CLASS_TRACER )
+		If gl_tracerResources Is Nothing Then
+			Set gl_tracerResources = New TracerResources()
+		End If
+	End If
+	Set getTracerResources = gl_tracerResources
+End Function
+Private Function getTracer() As TreeNodeTracer
+	If gl_tracer Is Nothing Then
+		Set gl_tracer = New TreeNodeTracer()
+	End If
+	Set getTracer = gl_tracer
+End Function
+Function getTraceReport() As String
+	Dim report As New TreeNodeTracerReport()
+	getTraceReport = report.getReport()
+End Function
+Sub setTracerResources( argTracerRes As TracerResources )
+	Set gl_tracerResources = argTracerRes
+End Sub
+Sub traceOut()
+	Dim sProc As String
+	Dim sModule As String
+	sModule = getModuleName( GetThreadInfo(11) )
+	sProc = GetThreadInfo(10)
+	
+	If gl_tracer Is Nothing Then
+		Exit Sub
+	End If
+	
+	Call getTracer().traceOut( args.in( sModule ).in( sProc ) )
+End Sub
+Sub traceIn()
+	Dim sProc As String
+	Dim sModule As String
+	sModule = getModuleName( GetThreadInfo(11) )
+	sProc = GetThreadInfo(10)
+	
+	Call getTracer().traceIn( args.in( sModule ).in( sProc ) )
+End Sub
+Private Function formatTimeMs( argTimeInMs As Long ) As String
+	formatTimeMs = ""
+	Dim tRest As Long
+	tRest = argTimeInMs
+	Dim t As Long
+	
+	t = tRest \ 8640000 '( 100 * 60 * 60 * 24 )
+	If t > 0 Then
+		formatTimeMs = formatTimeMs & CStr( t ) & { Day(s) }
+		tRest = tRest - ( t * 8640000 )
+	End If
+	
+	t = tRest \ 360000 '( 100 * 60 * 60 )
+	formatTimeMs = formatTimeMs & CStr( t ) & {:}
+	tRest = tRest - ( t * 360000 )
+	
+	t = tRest \ 6000 '( 100 * 60 )
+	formatTimeMs = formatTimeMs & Format( CStr( t ), {00} ) & {:}
+	tRest = tRest - ( t * 6000 )
+	
+	t = tRest \ 100 '( 100 )
+	formatTimeMs = formatTimeMs & Format( CStr( t ), {00} ) & {.}
+	tRest = tRest - ( t * 100 )
+	
+	t = tRest
+	formatTimeMs = formatTimeMs & Format( CStr( t ), {00} )
+	tRest = tRest - ( t * 100 )
+End Function
+Function stopwatchFactory() As Stopwatch
+	On Error GoTo catch
+	
+	Set stopwatchFactory = classInstanceFactory( "libStopwatchLSXLC", "StopwatchLSXLC" )
+	
+	GoTo finally
+catch:
+	'*lsxlc extention is not available -> using LotusScript stopwatch
+	Set stopwatchFactory = New StopwatchLS()
+	Resume finally
+finally:
+End Function
