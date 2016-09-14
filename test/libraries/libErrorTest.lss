@@ -1,0 +1,144 @@
+Option Public
+Option Declare
+Use "libTestCase"
+Use "libError"
+Class libErrorTest As TestCase
+	'------------------------------
+	Private Function runTest() As Variant
+		Call testError() 'Do NOT modify code until line 47!
+		Call testOther() 'Test other functionality in sub "testOther"
+	End Function
+	'------------------------------
+	Private Sub a()
+		On Error GoTo catch
+		Call b()
+		
+		GoTo finally
+catch:
+		throwExceptionDetailed "some" & Chr(10) & "details"
+finally:
+	End Sub
+	'------------------------------
+	Private Sub b()
+		On Error GoTo catch
+		
+		
+		
+		Call c()
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub c()
+		On Error Resume Next
+		Call getErrorDetailed( {} ) 'to drop error from configObjectFactory
+		On Error GoTo catch
+		Error 2088, {Test error}
+		
+		GoTo finally
+catch:
+		throwExceptionDetailed "detailed"
+finally:
+	End Sub
+	'------------------------------
+	Private Sub testError()
+		On Error Resume Next
+		
+		Call a()
+		
+		On Error GoTo 0
+		
+		Dim expected As String
+		expected = {Runtime Error occured. Stack trace:} _
+		& Chr(10) & {        at line 35 in C error 2088 - Test error - detailed} _
+		& Chr(10) & {        at line 23 in B} _
+		& Chr(10) & {        at line 10 in A - some} & Chr(10) & {details} _
+		& Chr(10) & {        at line 46 in TESTERROR - get detailed} _
+		& Chr(10) & {        at line 4 in RUNTEST}
+		
+		Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, CLASS_ERROR_STACK_REPORT )
+		Call setErrorStackReport( Nothing)
+		
+		Dim result As String
+		result = getErrorDetailed( {get detailed} )
+		result = Left( result, Len( expected ) )
+		
+		Call assertStringEquals( expected, result )
+		
+		registerModule "libErrorTest"
+		expected = {Runtime Error occured. Stack trace:} _
+		& Chr(10) & {        at line 35 in C error 2088 - Test error - detailed} _
+		& Chr(10) & {        at line 23 in B} _
+		& Chr(10) & {        at line 10 in A - some} & Chr(10) & {details} _
+		& Chr(10) & {        at line 46 in TESTERROR (libErrorTest) - get detailed} _
+		& Chr(10) & {        at line 4 in RUNTEST}
+		
+		result = getErrorDetailed( {get detailed} )
+		result = Left( result, Len( expected ) )
+		
+		Call assertStringEquals( expected, result )
+		
+		Dim errReport As New ErrorStackReportTestHtml()
+		Call setErrorStackReport( errReport )
+		
+		expected = {Sh*t happened...} _
+		& {<br>} & {&nbsp;&nbsp;&nbsp;&nbsp;at line <b>35</b> in C error <b>2088</b> - Test error - detailed} _
+		& {<br>} & {&nbsp;&nbsp;&nbsp;&nbsp;at line <b>23</b> in B} _
+		& {<br>} & {&nbsp;&nbsp;&nbsp;&nbsp;at line <b>10</b> in A - some} & {<br>} & {details} _
+		& {<br>} & {&nbsp;&nbsp;&nbsp;&nbsp;at line <b>46</b> in TESTERROR (libErrorTest) - get detailed} _
+		& {<br>} & {&nbsp;&nbsp;&nbsp;&nbsp;at line <b>4</b> in RUNTEST}
+		
+		result = getErrorDetailed( {get detailed} )
+		result = Left( result, Len( expected ) )
+		
+		Call assertStringEquals( expected, result )
+	End Sub
+	'------------------------------
+	Private Sub testOther()
+		Call testModuleName()
+	End Sub
+	'------------------------------
+	Private Sub testModuleName()
+		registerModule "myTeStMoDuLe"
+		Call assertStringNotEquals( "blahBlahBlah", getModuleName( GetThreadInfo(11) ) )
+		Call assertStringNotEquals( "mytestmodule", getModuleName( GetThreadInfo(11) ) )
+		Call assertStringEquals( "myTeStMoDuLe", getModuleName( GetThreadInfo(11) ) )
+	End Sub
+	'------------------------------
+End Class
+Class ErrorStackReportTestHtml As ErrorStackReport
+	'------------------------------
+	Private Function lineSeparator()
+		lineSeparator = {<br>}
+	End Function
+	'------------------------------
+	Private Function indent()
+		indent = {&nbsp;&nbsp;&nbsp;&nbsp;}
+	End Function
+	'------------------------------
+	Private Function getReportHeader()
+		getReportHeader = {Sh*t happened...}
+	End Function
+	'------------------------------
+	Private Function errorDetailsToReportLine( argErrorDetails As ErrorDetails, argErrorDetailsPrev As ErrorDetails ) As String
+		errorDetailsToReportLine = me.indent() & {at line <b>} & argErrorDetails.errLine & {</b> in } & argErrorDetails.proc
+		
+		If argErrorDetails.isModuleValid() Then
+			errorDetailsToReportLine = errorDetailsToReportLine & { (} & argErrorDetails.module & {)}
+		End If
+		
+		If Not "" = argErrorDetails.errNumber Then
+			If Not argErrorDetailsPrev.errNumber = argErrorDetails.errNumber Then
+				errorDetailsToReportLine = errorDetailsToReportLine & { error <b>} & argErrorDetails.errNumber & {</b>}
+			End If
+		End If
+		
+		If Not "" = argErrorDetails.msg Then
+			errorDetailsToReportLine = errorDetailsToReportLine & { - } & argErrorDetails.msg
+		End If
+	End Function
+	'------------------------------
+End Class
