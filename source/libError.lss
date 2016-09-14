@@ -1,0 +1,309 @@
+Option Public
+Option Declare
+Use "libDLBase"
+Private gl_errorStackReport As ErrorStackReport
+Private Const STACK_HEADER = {STACK:}
+Private Const STACK_ERR_SEPARATOR = {.;|; }
+Public Const CLASS_ERROR_STACK_REPORT = "ErrorStackReport"
+
+Class Throwable
+	'-----------------------------
+	Private Sub throwException()
+		Error Err, getErrorStack( {}, GetThreadInfo(10), GetThreadInfo(11), TypeName( Me ) & {.} )
+	End Sub
+	'-----------------------------
+	Private Sub throwExceptionDetailed( argDetails As String )
+		Error Err, getErrorStack( argDetails, GetThreadInfo(10), GetThreadInfo(11), TypeName( Me ) & {.} )
+	End Sub
+	'-----------------------------
+	Private Function getErrorDetailed( argDetails As String ) As String
+		getErrorDetailed = getErrorStackReport().getReportWithParams( argDetails, GetThreadInfo(10), GetThreadInfo(11), TypeName( Me ) & {.} )
+	End Function
+	'-----------------------------
+End Class
+Class ErrorStackReport
+	'------------------------------
+	Function getReportWithParams( argDetails As String, argCallingProc As String, argCallingModule As String, argClassName As String ) As String
+		On Error GoTo catch
+		
+		getReportWithParams = me.errorStackToDetailed( getErrorStack( argDetails, argCallingProc, argCallingModule, argClassName ) )
+		
+		GoTo finally
+catch:
+		Error Err, Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1)
+finally:
+	End Function
+	'------------------------------
+	'transform Error Stack to user friendly message
+	Private Function errorStackToDetailed( argStack As String ) As String
+		On Error GoTo catch
+		
+		errorStackToDetailed = argStack
+		
+		Dim vStack As Variant
+		vStack = Split( argStack, Chr(10) )
+		If Not vStack(0) = STACK_HEADER Then
+			Exit Function
+		End If
+		
+		vStack(0) = getReportHeader()
+		
+		Dim errDetailsPrev As New ErrorDetails( "", "" )
+		Call errDetailsPrev.clear()
+		
+		Dim i As Integer
+		For i = 1 To UBound( vStack )
+			Dim errDetails As New ErrorDetails( "", "" )
+			Call errDetails.fromStackLine( vStack(i) )
+			
+			If errDetails.isValid() Then
+				vStack(i) = me.errorDetailsToReportLine( errDetails, errDetailsPrev )
+				Set errDetailsPrev = errDetails
+			End If
+		Next
+		
+		errorStackToDetailed = decodeNewLine( Join( vStack, me.lineSeparator() ), me.lineSeparator() )
+		
+		GoTo finally
+catch:
+		Error Err, Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1)
+finally:
+	End Function
+	'------------------------------
+	Private Function lineSeparator()
+		lineSeparator = Chr(10)
+	End Function
+	'------------------------------
+	Private Function indent()
+		indent = {        } 'Chr(9)
+	End Function
+	'------------------------------
+	Private Function getReportHeader()
+		getReportHeader = {Runtime Error occured. Stack trace:}
+	End Function
+	'------------------------------
+	Private Function errorDetailsToReportLine( argErrorDetails As ErrorDetails, argErrorDetailsPrev As ErrorDetails ) As String
+		errorDetailsToReportLine = me.indent() & {at line } & argErrorDetails.errLine & { in } & argErrorDetails.proc
+		
+		If argErrorDetails.isModuleValid() Then
+			errorDetailsToReportLine = errorDetailsToReportLine & { (} & argErrorDetails.module & {)}
+		End If
+		
+		If Not "" = argErrorDetails.errNumber Then
+			If Not argErrorDetailsPrev.errNumber = argErrorDetails.errNumber Then
+				errorDetailsToReportLine = errorDetailsToReportLine & { error } & argErrorDetails.errNumber
+			End If
+		End If
+		
+		If Not "" = argErrorDetails.msg Then
+			errorDetailsToReportLine = errorDetailsToReportLine & { - } & argErrorDetails.msg
+		End If
+	End Function
+	'------------------------------
+End Class
+Private Class ErrorStackHelper
+	Private lineSeparator As String
+	'------------------------------
+	Sub New()
+		me.lineSeparator = Chr(10)
+	End Sub
+	'------------------------------
+	'SERVER PART - Workaround for "LSI_Info is Not Thread Safe" - No use of LSI_Info
+	Function getErrorStackOnServer( argDetails As String, argCallingProc As String, argCallingModule As String, argClassName As String ) As String
+		Dim errDetails As New ErrorDetails( argCallingModule, argClassName & argCallingProc )
+		Dim stack As String
+		If STACK_HEADER = Left( errDetails.msg, Len( STACK_HEADER ) ) Then
+			stack = errDetails.msg
+			errDetails.msg = argDetails
+		Else
+			errDetails.msg = concatStrings( errDetails.msg, { - }, argDetails )
+			stack = STACK_HEADER
+		End If
+		getErrorStackOnServer = stack & me.lineSeparator & errDetails.toStackLine()
+	End Function
+	'------------------------------
+	'CLIENT PART - with LSI_Info
+	Function getErrorStackOnClient( argDetails As String, argCallingProc As String, argCallingModule As String, argClassName As String ) As String
+		On Error GoTo catch
+		
+		Dim errDetails As New ErrorDetails( argCallingModule, argClassName & argCallingProc )
+		
+		'if first occurance of the Error - get system stack and error message,
+		' otherwise - get stack from error message and custom error description from function's argument
+		Dim vStack As Variant
+		vStack = Split( Error, me.lineSeparator )
+		
+		Dim sExecuteStackFlag As String
+		sExecuteStackFlag = {: } & STACK_HEADER
+		
+		If STACK_HEADER = Left( Error, Len( STACK_HEADER ) ) Or Right( vStack(0), Len( sExecuteStackFlag ) ) = sExecuteStackFlag Then
+			errDetails.msg = argDetails
+		Else
+			errDetails.msg = concatStrings( errDetails.msg, { - }, argDetails )
+			vStack = Split( LSI_Info(14), me.lineSeparator )
+			vStack(1) = "" 'getErrorStack
+			vStack(2) = "" 'throwException/throwExceptionDetailed
+			vStack = fixExecuteInput( vStack )
+		End If
+		vStack(0) = "" 'STACK_HEADER/getErrorStackOnClient
+		vStack = FullTrim( vStack )
+		
+		Dim i As Integer
+		For i = 0 To UBound( vStack )
+			Dim errDetailsLine As New ErrorDetails( "", "" )
+			Call errDetailsLine.fromStackLine( vStack(i) )
+			
+			If errDetailsLine.isValid() Then
+				'catch calling function to fix error line and add error number and custom error description
+				If errDetailsLine.module = errDetails.module And errDetailsLine.proc = errDetails.proc And "" = errDetailsLine.errNumber Then
+					vStack(i) = errDetails.toStackLine()
+					Exit For
+				End If
+			End If
+		Next
+		
+		getErrorStackOnClient = STACK_HEADER & me.lineSeparator & Join( vStack, me.lineSeparator )
+		
+		GoTo finally
+catch:
+		Error Err, Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1)
+finally:
+	End Function
+	'------------------------------
+	Private Function fixExecuteInput( argStack As Variant ) As Variant
+		Dim vStack As Variant
+		vStack = argStack
+		
+		Dim j As Integer
+		For j = 0 To UBound( vStack )
+			If "$EXECUTE$" = Left( vStack(j), 9 ) Or "," = Left( vStack(j), 1 ) Then
+				vStack(j) = ""
+			End If
+		Next
+		fixExecuteInput = vStack
+	End Function
+	'------------------------------
+	Private Function concatStrings( argText1 As String, argSeparator As String, argText2 As String ) As String
+		If "" = argText2 Then
+			concatStrings = argText1
+		Else
+			If "" = argText1 Then
+				concatStrings = argText2
+			Else
+				concatStrings = argText1 & argSeparator & argText2
+			End If
+		End If
+	End Function
+	'------------------------------
+End Class
+Class ErrorDetails
+	Public module As String
+	Public proc As String
+	Public errLine As String
+	Public errNumber As String
+	Public msg As String
+	'------------------------------
+	Sub New( argModule As String, argProc As String )
+		me.module = Trim( argModule )
+		If "" = me.module Then
+			me.module = GetThreadInfo(11)
+		End If
+		
+		me.proc = argProc
+		If "" = me.proc Then
+			me.proc = GetThreadInfo(10)
+		End If
+		
+		me.errLine = CStr( Erl )
+		me.errNumber = CStr( Err )
+		me.msg = Error
+	End Sub
+	'------------------------------
+	Sub clear()
+		me.module = ""
+		me.proc = ""
+		me.errLine = ""
+		me.errNumber = ""
+		me.msg = ""
+	End Sub
+	'------------------------------
+	Function toStackLine() As String
+		toStackLine = getModuleName( me.module ) & {,} & me.proc & {,} & me.errLine & {,} & me.errNumber & {,} & encodeNewLine( me.msg )
+	End Function
+	'------------------------------
+	Sub fromStackLine( argLine As String )
+		Call me.clear()
+		
+		Const ECOL_MODULE = 0
+		Const ECOL_PROC = 1
+		Const ECOL_LINE = 2
+		Const ECOL_ERR = 3
+		Const ECOL_MSG = 4
+		
+		Dim cols As Variant
+		cols = Split( argLine, {,} )
+		If UBound( cols ) > 1 Then
+			me.module = cols( ECOL_MODULE )
+			me.proc = cols( ECOL_PROC )
+			me.errLine = cols( ECOL_LINE )
+		End If
+		If UBound( cols ) > 3 Then
+			me.errNumber = cols( ECOL_ERR )
+			
+			cols( ECOL_MODULE ) = ""
+			cols( ECOL_PROC ) = ""
+			cols( ECOL_LINE ) = ""
+			cols( ECOL_ERR ) = ""
+			cols = FullTrim( cols )
+			me.msg = Join( cols, "," )
+		End If
+	End Sub
+	'------------------------------
+	Function isValid() As Boolean
+		isValid = Not ( "" = me.module Or "" = me.proc Or "" = me.errLine )
+	End Function
+	'------------------------------
+	Function isModuleValid() As Boolean
+		isModuleValid = Not ( "*" = Left( me.module, 1 ) )
+	End Function
+	'------------------------------
+End Class
+Sub Initialize
+	registerModule "libError"
+End Sub
+Function getErrorDetailed( argDetails As String ) As String
+	getErrorDetailed = getErrorStackReport().getReportWithParams( argDetails, GetThreadInfo(10), GetThreadInfo(11), {} )
+End Function
+Private Function decodeNewLine( argText As String, argNewLine As String ) As String
+	decodeNewLine = Join( Split( argText, STACK_ERR_SEPARATOR ), argNewLine )
+End Function
+Private Function getErrorStack( argDetails As String, argCallingProc As String, argCallingModule As String, argClassName As String ) As String
+	Dim o As New ErrorStackHelper()
+	Dim s As New NotesSession()
+	If s.isOnServer Then
+		getErrorStack = o.getErrorStackOnServer( argDetails, argCallingProc, argCallingModule, argClassName )
+	Else
+		getErrorStack = o.getErrorStackOnClient( argDetails, argCallingProc, argCallingModule, argClassName )
+	End If
+End Function
+Sub setErrorStackReport( argReport As ErrorStackReport )
+	Set gl_errorStackReport = argReport
+End Sub
+Sub throwException()
+	Error Err, getErrorStack( {}, GetThreadInfo(10), GetThreadInfo(11), {}  )
+End Sub
+Sub throwExceptionDetailed( argDetails As String )
+	Error Err, getErrorStack( argDetails, GetThreadInfo(10), GetThreadInfo(11), {} )
+End Sub
+Private Function getErrorStackReport() As ErrorStackReport
+	If gl_errorStackReport Is Nothing Then
+		Set gl_errorStackReport = classOverloadFactory( LIB_CONFIG_NAME, CLASS_ERROR_STACK_REPORT )
+		If gl_errorStackReport Is Nothing Then
+			Set gl_errorStackReport = New ErrorStackReport()
+		End If
+	End If
+	Set getErrorStackReport = gl_errorStackReport
+End Function
+Private Function encodeNewLine( argText As String ) As String
+	encodeNewLine = Join( Split( argText, Chr(10) ), STACK_ERR_SEPARATOR )
+End Function
