@@ -1,0 +1,414 @@
+Option Public
+Option Declare
+Use "libError"
+Use "libDynamicArguments"
+Private gl_logger As Logger
+Private gl_loggingLevel List As Byte
+Const LL_NONE = 0 'silence
+Const LL_ASSERT = 1
+Const LL_ERROR = 2
+Const LL_WARN = 3
+Const LL_INFO = 4
+Const LL_DEBUG = 5
+Const LL_VERBOSE = 6
+Const LL_ALL = 255
+Public Const CLASS_LOGGER = "Logger"
+Class Logger As Throwable
+	'------------------------------
+	Sub assert( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub Error( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub warn( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub info( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub debug( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Sub verbose( msg As String, id As DynamicArguments )
+		Call me.output( msg )
+	End Sub
+	'------------------------------
+	Private Sub Output( msg As String )
+	End Sub
+	'------------------------------
+End Class
+Class Loggable As Throwable
+	'------------------------------
+	Private Sub logAssert( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_ASSERT )  Then
+			Call L.assert( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub logError( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_ERROR )  Then
+			Call L.error( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub logWarn( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_WARN )  Then
+			Call L.warn( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub logInfo( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_INFO )  Then
+			Call L.info( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub logDebug( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_DEBUG )  Then
+			Call L.debug( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub logVerbose( msg As String )
+		On Error GoTo catch
+		
+		Dim proc As String
+		proc = GetThreadInfo(10)
+		Dim module As String
+		module = getModuleName( GetThreadInfo(11) )
+		Dim className As String
+		className = TypeName( Me )
+		
+		If me.isLoggingAllowed( module, className, proc, LL_VERBOSE )  Then
+			Call L.verbose( msg, args.in( module ).in( className).in( proc ) )
+		End If
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Function isLoggingAllowed( module As String, className As String, proc As String, ll As Byte ) As Boolean
+		Call L
+		isLoggingAllowed = ( me.getLoggingLevel( module, className, proc ) >= ll )
+	End Function
+	'------------------------------
+	Private Function getLoggingLevel( module As String, className As String, proc As String ) As Byte
+		Dim id As String
+		id = LCase( module & {|} & className & {|} & proc )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( module & {|} & className )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( module )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( className & {|} & proc )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( className )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( proc )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		id = LCase( "ALL" )
+		
+		If IsElement( gl_loggingLevel( id ) ) Then
+			getLoggingLevel = gl_loggingLevel( id )
+			Exit Function
+		End If
+		
+		getLoggingLevel = LL_INFO
+	End Function
+	'------------------------------
+End Class
+Sub Initialize
+	registerModule "libLog"
+End Sub
+'to be used only in "libLogConfig"
+'sets logging level for specified module
+'@param module - Example: "library.class.procedure"
+'@param level - Example: LL_NONE, LL_ASSERT, LL_ERROR, ..., LL_DEBUG, LL_VERBOSE, LL_ALL
+Sub setLogLevel( module As String, level As Byte )
+	If "" = module Then
+		Exit Sub
+	End If
+	
+	If module = "ALL" Then
+		'overwrite level for all
+		Erase gl_loggingLevel
+	Else
+		'overwrite level for every defined nested member in module
+		ForAll ll In gl_loggingLevel
+			Dim subModule As String
+			subModule = ListTag( ll )
+			
+			If 1 = InStr( subModule, module ) Then
+				Erase ll
+			End If
+		End ForAll
+	End If
+	
+	gl_loggingLevel( LCase( module ) ) = level
+End Sub
+Sub logError( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_ERROR )  Then
+		Call L.error( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
+Sub logAssert( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_ASSERT )  Then
+		Call L.assert( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
+Sub logWarn( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_WARN )  Then
+		Call L.warn( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
+Private Function L As Logger
+	If gl_logger Is Nothing Then
+		Set gl_logger = classInstanceFactory( LIB_CONFIG_NAME, CLASS_LOGGER )
+		If gl_logger Is Nothing Then
+			Set gl_logger = New Logger()
+		End If
+	End If
+	Set L = gl_logger
+End Function
+Sub logDebug( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_DEBUG )  Then
+		Call L.debug( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
+'allows to override default Logger
+Public Sub setLogger( argL As Logger )
+	Set gl_logger = argL
+End Sub
+Sub logInfo( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_INFO )  Then
+		Call L.info( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
+Private Function isLoggingAllowed( module As String, proc As String, lLevel As Byte ) As Boolean
+	Call L
+	isLoggingAllowed = ( getLoggingLevel( module, proc ) >= lLevel )
+End Function
+Private Function getLoggingLevel( module As String, proc As String ) As Byte
+	Dim id As String
+	id = LCase( module & {||} & proc )
+	
+	If IsElement( gl_loggingLevel( id ) ) Then
+		getLoggingLevel = gl_loggingLevel( id )
+		Exit Function
+	End If
+	
+	id = LCase( module )
+	
+	If IsElement( gl_loggingLevel( id ) ) Then
+		getLoggingLevel = gl_loggingLevel( id )
+		Exit Function
+	End If
+	
+	id = LCase( {|} & proc )
+	
+	If IsElement( gl_loggingLevel( id ) ) Then
+		getLoggingLevel = gl_loggingLevel( id )
+		Exit Function
+	End If
+	
+	id = LCase( proc )
+	
+	If IsElement( gl_loggingLevel( id ) ) Then
+		getLoggingLevel = gl_loggingLevel( id )
+		Exit Function
+	End If
+	
+	id = LCase( "ALL" )
+	
+	If IsElement( gl_loggingLevel( id ) ) Then
+		getLoggingLevel = gl_loggingLevel( id )
+		Exit Function
+	End If
+	
+	getLoggingLevel = LL_INFO
+End Function
+Sub logVerbose( msg As String )
+	On Error GoTo catch
+	
+	Dim proc As String
+	proc = GetThreadInfo(10)
+	Dim module As String
+	module = getModuleName( GetThreadInfo(11) )
+	
+	If isLoggingAllowed( module, proc, LL_VERBOSE )  Then
+		Call L.verbose( msg, args.in( module ).in( proc ) )
+	End If
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+End Sub
