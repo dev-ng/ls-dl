@@ -1,0 +1,365 @@
+Option Public
+Option Declare
+Use "libError"
+Class TestCase
+	Private ERROR_ASSERT_FAILED As Integer
+	Private result As TestResult
+	Private sModuleName As String
+	'------------------------------
+	Public Sub New()
+		me.ERROR_ASSERT_FAILED = 4997
+		Set me.result = New TestResult()
+	End Sub
+	'------------------------------
+	Public Sub init( argModuleName As String )
+		me.sModuleName = argModuleName
+		Call me.result.init( argModuleName )
+	End Sub
+	'------------------------------
+	Private Sub setUp()
+	End Sub
+	'------------------------------
+	Private Sub tearDown()
+	End Sub
+	'------------------------------
+	Public Function run() As TestResult
+		On Error GoTo catch
+		
+		Call me.runTest()
+		
+		GoTo finally
+catch:
+		Call result.addTestCaseError()
+		Resume finally
+finally:
+		Set run = result
+	End Function
+	'------------------------------
+	Private Function runTest() As Variant
+	End Function
+	'--------------------------------------------
+	Private Function getExecutePrefix() As String
+		getExecutePrefix = {Use "} & me.sModuleName & {"
+}
+	End Function
+	'------------------------------
+	Sub assertStringEquals( arg1 As String, arg2 As String )
+		On Error GoTo catch
+
+		If Not arg1 = arg2 Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+		
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertFail( arg As Variant )
+		On Error GoTo catchNoError
+				
+		Execute( getExecutePrefix() & arg )
+		
+		On Error GoTo catch
+		Error ERROR_ASSERT_FAILED, arg
+
+catchNoError:
+		Resume finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertStringNotEquals( arg1 As String, arg2 As String )
+		On Error GoTo catch
+		
+		If arg1 = arg2 Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertFailWithError( arg As Variant, argErrorNumber As Integer )
+		On Error GoTo catchTestError
+		
+		Execute( getExecutePrefix() & arg )
+		
+		On Error GoTo catch
+		Error ERROR_ASSERT_FAILED, arg
+
+catchTestError:
+		If getRealError() = argErrorNumber Then
+			Resume finally
+		End If
+		Call me.result.addError( Trim( StrRight( Error, ":" ) ) )
+		Resume finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertNoFail( arg As Variant )
+		On Error GoTo catch
+		
+		Execute( getExecutePrefix() & arg )
+		
+		GoTo finally
+catch:
+		Call me.result.addError( Trim( StrRight( Error, ":" ) ) )
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertIsNotNothing( arg As Variant )
+		On Error GoTo catch
+
+		If arg Is Nothing Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertFalse( arg As Variant )
+		On Error GoTo catch
+
+		If Not DataType( arg ) = 11 Then
+			Error ERROR_ASSERT_FAILED, "wrong datatype"
+		End If
+		
+		If arg Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertIsNothing( arg As Variant )
+		On Error GoTo catch
+
+		If Not arg Is Nothing Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	Sub assertTrue( arg As Variant )
+		On Error GoTo catch
+
+		If Not DataType( arg ) = 11 Then
+			Error ERROR_ASSERT_FAILED, "wrong datatype"
+		End If
+		
+		If Not arg Then
+			Error ERROR_ASSERT_FAILED, "assert failed"
+		End If
+
+		GoTo finally
+catch:
+		Call me.result.addError({})
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+End Class
+Class TestResult
+	Private iErrorsCount As Long
+	Public moduleName As String
+	Public allErrors List As ErrorDetail
+	Private oScript As ScriptExplorer
+	'------------------------------
+	Public Sub New()
+		me.iErrorsCount = 0
+	End Sub
+	'------------------------------
+	Public Sub init( argModuleName As String )
+		me.moduleName = argModuleName
+		Set me.oScript = New ScriptExplorer()
+		If Not me.oScript.locateLibrary( argModuleName ) Then
+			Error 4996, {Can not locate library "} & argModuleName & {"}
+		End If
+	End Sub
+	'------------------------------
+	Public Sub addError( argDetails As String )
+		me.iErrorsCount = me.iErrorsCount + 1
+		
+		Dim vStack As Variant
+		vStack = Split( LSI_Info(14), Chr(10) )
+		Dim newError As New ErrorDetail( "", "" )
+		Call newError.fromStackLine( vStack(2) )
+		Call me.oScript.locateMethod( newError.proc )
+		
+		newError.msg = argDetails
+		newError.errLineOriginal = newError.errLine
+		newError.errLine = newError.errLine - me.oScript.iClassOffset
+		newError.errLineScript = Trim( me.oScript.vScript( me.oScript.iFunctionOffset + newError.errLine ) )
+		newError.errNumber = Err
+		
+		Set me.allErrors( me.iErrorsCount ) = newError
+	End Sub
+	'------------------------------
+	Public Sub addTestCaseError()
+		me.iErrorsCount = me.iErrorsCount + 1
+		
+		Dim newError As New ErrorDetail( "", "" )
+		newError.proc = "Unknown - called from runTest"
+		newError.msg = {Please check your TestCase implementation}
+		newError.errLine = 0
+		newError.errLineOriginal = 0
+		newError.errLineScript = Error
+		newError.errNumber = Err
+		
+		Set me.allErrors( me.iErrorsCount ) = newError
+	End Sub
+	'------------------------------
+	Public Function getErrorsCount() As Long
+		getErrorsCount = me.iErrorsCount
+	End Function
+	'------------------------------
+	Public Function getReport() As String
+		Dim sResult As String
+		sResult = ""
+		ForAll e In me.allErrors
+			sResult = sResult & e.proc & {  } & CStr( e.errLine ) & { (} & e.errLineOriginal & {) } & e.errLineScript & { - } & e.msg & Chr(10)
+		End ForAll
+		getReport = sResult
+	End Function
+	'------------------------------
+End Class
+Private Class ScriptExplorer
+	Public vScript As Variant
+	Public iFunctionOffset As Integer
+	Public iClassOffset As Integer
+	Private sLibraryName As String
+	'------------------------------
+	Public Sub New()
+		me.iClassOffset = 0
+	End Sub
+	'------------------------------
+	Public Function locateMethod( argMethodName As String ) As Boolean
+		locateMethod = me.locateClassMethod()
+	End Function
+	'------------------------------
+	Private Function locateClassMethod() As Boolean
+		locateClassMethod = False
+		
+		'locating declarations start line
+		me.iFunctionOffset = -1
+		Dim sLine As String
+		ForAll vLine In me.vScript
+			sLine = CStr( vLine )
+			me.iFunctionOffset = me.iFunctionOffset + 1
+			If _
+			doesStartWith( sLine, {'++LotusScript Development Environment:} ) And _
+			InStr( UCase( sLine ), UCase( {(Declarations)} ) ) > 0 _
+			Then
+				Exit ForAll
+			End If
+		End ForAll
+		
+		'locating class start line
+		me.iClassOffset = -2
+		ForAll vLine In me.vScript
+			sLine = CStr( vLine )
+			me.iClassOffset = me.iClassOffset + 1
+			If _
+			doesStartWith( sLine, {Class } & me.sLibraryName )_
+			Then
+				Exit ForAll
+			End If
+		End ForAll
+		
+		me.iClassOffset = me.iClassOffset - me.iFunctionOffset
+		
+		locateClassMethod = True
+	End Function
+	'------------------------------
+	Public Function locateLibrary( argLibraryName As String ) As Boolean
+		locateLibrary = False
+
+		me.sLibraryName = argLibraryName
+		
+		Dim s As New NotesSession
+		Dim db As NotesDatabase
+		Set db = s.CurrentDatabase
+		Dim nc As NotesNoteCollection
+		Set nc = db.CreateNoteCollection( False )
+		nc.Selectscriptlibraries = True
+		Call nc.BuildCollection
+		
+		Dim nid As String
+		Dim nidNext As String
+		Dim docDesign As NotesDocument
+		
+		Dim sFlags As String
+		nidNext = nc.GetFirstNoteId()
+		Do While Not "" = nidNext
+			nid = nidNext
+			nidNext = nc.GetNextNoteId(nid)
+			Set docDesign = db.GetDocumentByID(nid)
+			
+			If Not docDesign Is Nothing Then
+				If UCase( docDesign.Getitemvalue( "$TITLE" )(0) ) = UCase( me.sLibraryName ) Then
+					Exit Do
+				End If
+			End If
+		Loop
+		
+		If docDesign Is Nothing Then
+			Error 4998, {Design document for this function is not found}
+		End If
+
+		me.vScript = Split( Replace( docDesign.Getitemvalue( "$ScriptLib" )(0), Chr(9), {    } ), Chr(10) )
+
+		locateLibrary = True
+	End Function
+	'------------------------------
+End Class
+Class ErrorDetail As ErrorDetails
+	Public errLineOriginal As Integer
+	Public errLineScript As String
+	'------------------------------
+	Sub New( argModule As String, argProc As String ), ErrorDetails( argModule, argProc )
+	End Sub
+	'------------------------------
+End Class
+Private Function getRealError() As Integer
+	If Err = 156 Then
+		Dim vStack As Variant
+		vStack = Split( Error, Chr(10) )
+		
+		If UBound( vStack ) > 0 Then
+			Dim errDetails As New ErrorDetails( "", "" )
+			Call errDetails.fromStackLine( vStack(1) )
+			getRealError = CInt( errDetails.errNumber )
+			Exit Function
+		End If
+	End If
+	
+	getRealError = Err
+End Function
+Private Function doesStartWith( argLine As String, argBegin As String ) As Boolean
+	doesStartWith = ( UCase( Left( FullTrim( argLine ), Len( argBegin ) ) ) = FullTrim( UCase( argBegin ) ) )
+End Function
