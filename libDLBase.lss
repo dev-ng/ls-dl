@@ -1,0 +1,65 @@
+Option Public
+Option Declare
+Private gl_modules List As String
+Public gl_dummyO As Variant 'for Execute/dynamic load
+Private gl_overloadClassNames List As String
+Public Const CIFACTORY_FAIL_SILENT = True
+Public Const CIFACTORY_FAIL_NORMAL = False
+Public Const LIB_CONFIG_NAME = "libConfig"
+Sub Initialize
+	registerModule "libDLBase"
+	On Error Resume Next
+	Execute {use "libConfig"
+call libConfigInit()}
+End Sub
+Public Sub overloadDefaultClass( argDefault As String, argOverload As String )
+	gl_overloadClassNames( argDefault ) = argOverload
+End Sub
+Function classOverloadFactory( argLSLibraryName As String, argClassName As String ) As Variant
+	On Error Resume Next
+	
+	Dim sError As String
+	sError = Error
+	Dim iErr As Integer
+	iErr = Err
+	
+	Set classOverloadFactory = Nothing
+	If IsElement( gl_overloadClassNames( argClassName ) ) Then
+		Set classOverloadFactory = classInstanceFactory( argLSLibraryName, gl_overloadClassNames( argClassName ) )
+	End If
+	
+	If Not ( Err = iErr And Error = sError ) Then
+		If Not ( "" = sError And 0 = iErr ) Then
+			Error iErr, sError
+		End If
+	End If
+End Function
+Function classInstanceFactory( argLSLibraryName As String, argClassName As String ) As Variant
+	On Error GoTo catch
+	
+	Set classInstanceFactory = Nothing
+	
+	Set gl_dummyO = Nothing
+	Execute {use "} & argLSLibraryName & {"
+Set gl_dummyO = New } & argClassName & {()}
+	Set classInstanceFactory = gl_dummyO
+	Set gl_dummyO = Nothing
+	
+	GoTo finally
+catch:
+	Error Err, Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1)
+finally:
+End Function
+Function getModuleName( argAlias As String ) As String
+	If IsElement( gl_modules( argAlias ) ) Then
+		getModuleName = gl_modules( argAlias )
+	Else
+		getModuleName = argAlias
+	End If
+End Function
+'Allows to recognize library/form/agent/etc name
+'To be called from Sub Initialize in every library/design element
+'@param argName - name of the design element. Example: libLog
+Sub registerModule( argName As String )
+	gl_modules( GetThreadInfo(11) ) = argName
+End Sub
