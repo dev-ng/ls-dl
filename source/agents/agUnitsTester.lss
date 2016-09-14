@@ -1,0 +1,286 @@
+Option Public
+Option Declare
+Use "libTestCase"
+Const xmlTop = {<?xml version="1.0"?>
+<root>}
+Const xmlBot = {</root>}
+
+Const xsl = {<?xml version="1.0" encoding="windows-1251"?>
+<xsl:stylesheet  version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html"/>
+  <xsl:template match="root">
+    <html>
+      <head>
+        <title>Test results</title>
+      </head>
+} & |<style>
+body {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 9px;
+	border: 0px solid #000000;
+}
+
+table, th, td {
+    border: 0px;
+}
+th, td {
+    padding: 5px;
+}
+th {
+	font-weight: bold;
+	color: #000000;
+	background-color: #CECFCE;
+}
+td.ok {
+	color: #008800;
+}
+td.err {
+	color: #ff0000;
+}
+span.fnk {
+	color: #0000ff;
+}
+</style>
+| & {      <body>
+		<h1>Test results</h1>
+		<table width="100%">
+			<xsl:apply-templates/>
+		</table>
+      </body>
+    </html>
+  </xsl:template>
+
+<xsl:template match="info">
+    <tr>
+		<xsl:apply-templates/>
+		<td width="100%"><h2>errors</h2></td>
+    </tr>
+  </xsl:template>
+
+<xsl:template match="name">
+    <td width="400px"><h2><xsl:value-of select="."/></h2></td>
+  </xsl:template>
+
+<xsl:template match="errcount">
+	<xsl:choose>
+		<xsl:when test="current()='0'">
+			<td width="50px" class="ok"><h2><xsl:value-of select="."/></h2></td>
+		</xsl:when>
+		<xsl:otherwise>
+			<td width="50px" class="err"><h2><xsl:value-of select="."/></h2></td>
+		</xsl:otherwise>
+	</xsl:choose>
+  </xsl:template>
+
+<xsl:template match="errors">
+    <tr><td width="100%" colspan="3">
+    <table width="100%">
+        <tr><th width="200px">Module</th><th width="50px">Line</th><th>Script</th><th width="200px">Details</th></tr>
+		<colspan>
+			<col align="left"></col>
+			<col align="right"></col>
+			<col align="left"></col>
+			<col align="left"></col>
+		</colspan>
+	    <xsl:apply-templates/>
+	</table>
+	</td></tr>
+  </xsl:template>
+
+<xsl:template match="error">
+        <tr>
+	    <xsl:apply-templates/>
+	    </tr>
+  </xsl:template>
+
+<xsl:template match="method | line | details">
+    <td><xsl:value-of select="."/></td>
+</xsl:template>
+
+<xsl:template match="code">
+    <td><xsl:value-of select="."/></td>
+</xsl:template>
+
+</xsl:stylesheet>}
+Class TestCases
+	Private designElements List As String
+	
+	Public Sub New()
+		Dim s As New NotesSession
+		Dim db As NotesDatabase
+		Set db = s.CurrentDatabase
+		Dim ncollDesign As NotesNoteCollection
+		Set ncollDesign = db.CreateNoteCollection( False )
+		ncollDesign.Selectscriptlibraries = True
+		Call ncollDesign.BuildCollection
+		
+		Dim nid As String
+		Dim nidNext As String
+		Dim i As Integer
+		Dim docDesign As NotesDocument
+		
+		Dim sFlags As String
+		nidNext = ncollDesign.GetFirstNoteId
+		Do While Not "" = nidNext
+			nid = nidNext
+			nidNext = ncollDesign.GetNextNoteId(nid)
+			Set docDesign = db.GetDocumentByID( nid )
+			
+			If Not docDesign Is Nothing Then
+				me.designElements( docDesign.Getitemvalue( "$TITLE" )(0) ) = "*"
+			End If
+		Loop
+	End Sub
+	
+	Public Function getFirst As Variant
+		Set getFirst = me.getNext()
+	End Function
+	
+	Public Function getNext()
+		Set me.getNext = Nothing
+		
+		ForAll libraryTitle In me.designElements
+			Dim title As String
+			title = ListTag( libraryTitle )
+			
+			If Len( title ) > 4 Then
+				If Right( UCase( title ), 4 ) = UCase( "TEST" ) Then
+					If IsElement( me.designElements( Left( title, Len( title ) - 4 ) ) ) Then
+						Erase me.designElements( title )
+						
+						Dim obj As TestCase
+						Set obj = classInstanceFactory( title, title ) 'getClass( title )
+						Call obj.init( title )
+						Set me.getNext = obj
+						
+						Exit ForAll
+					End If
+				End If
+			End If
+		End ForAll
+	End Function
+End Class
+Private Class HTMLReportTR
+	Private report As NotesStream
+	Private totalErrors As Long
+	'------------------------------
+	Sub New()
+		Dim s As New NotesSession
+		Set me.report = s.Createstream()
+		me.totalErrors = 0
+		
+		Call me.report.Writetext( xmlTop )
+	End Sub
+	'------------------------------
+	Sub appendTestResult( argTestResult As TestResult )
+		On Error GoTo catch
+		
+		me.totalErrors = me.totalErrors + argTestResult.getErrorsCount()
+		
+		Call report.Writetext( {<module>}, EOL_PLATFORM )
+		Call report.Writetext( {<info>}, EOL_PLATFORM )
+		Call report.Writetext( {<name>} )
+		Call report.Writetext( argTestResult.moduleName )
+		Call report.Writetext( {</name>}, EOL_PLATFORM )
+		Call report.Writetext( {<errcount>} )
+		Call report.Writetext( CStr( argTestResult.getErrorsCount() ) )
+		Call report.Writetext( {</errcount>}, EOL_PLATFORM )
+		Call report.Writetext( {</info>}, EOL_PLATFORM )
+		
+		If Not 0 = argTestResult.getErrorsCount() Then
+			Call appendErrors( argTestResult )
+		End If
+		
+		Call report.Writetext( {</module>}, EOL_PLATFORM )
+		
+		GoTo finally
+catch:
+		throwException
+finally:
+	End Sub
+	'------------------------------
+	Private Sub appendErrors( argTestResult As TestResult )
+		Call report.Writetext( {<errors>}, EOL_PLATFORM )
+		ForAll trError In argTestResult.allErrors
+			Call report.Writetext( {<error>}, EOL_PLATFORM )
+			Call report.Writetext( {<method>} )
+			Call report.Writetext( trError.proc )
+			Call report.Writetext( {</method>}, EOL_PLATFORM )
+			Call report.Writetext( {<line>} )
+			Call report.Writetext( CStr( trError.errLine ) )
+			Call report.Writetext( {</line>}, EOL_PLATFORM )
+			Call report.Writetext( {<code>} )
+			Call report.Writetext( trError.errLineScript )
+			Call report.Writetext( {</code>}, EOL_PLATFORM )
+			Call report.Writetext( {<details>} )
+			Call report.Writetext( trError.msg )
+			Call report.Writetext( {</details>}, EOL_PLATFORM )
+			Call report.Writetext( {</error>}, EOL_PLATFORM )
+		End ForAll
+		Call report.Writetext( {</errors>}, EOL_PLATFORM )
+	End Sub
+	'------------------------------
+	Sub showReport()
+		Call me.report.Writetext( xmlBot )
+		me.report.Position = 0
+		
+		Dim s As New NotesSession()
+		Dim xslTransformer As NotesXSLTransformer
+		
+		Dim xslStream As NotesStream
+		Set xslStream = s.Createstream()
+		Call xslStream.Writetext( xsl )
+		
+		Dim outputFile As NotesStream
+		Set outputFile = s.Createstream()
+		Call outputFile.Open( Environ("TEMP") & {/testresults.html} )
+		Call outputFile.Truncate()
+		
+		Set xslTransformer = s.Createxsltransformer( me.report, xslStream, outputFile )
+		
+		On Error GoTo catchTransformError
+		Call xslTransformer.Process()
+		On Error GoTo 0
+		
+		Dim dummy As Variant
+		dummy = Shell( Environ("ComSpec") & { /C Start "" "} & Environ("TEMP") & {/testresults.html} & {"}, 6 )
+		
+		GoTo finally
+catchTransformError:
+		MsgBox xslTransformer.Log
+		Resume finally
+finally:
+	End Sub
+	'------------------------------
+	'------------------------------
+End Class
+Sub Initialize
+	On Error GoTo catch
+	
+	Dim htmlReport As New HTMLReportTR()
+	
+	Dim testCases As TestCases
+	Set testCases = New TestCases()
+	
+	Dim testCaseNext As Variant
+	Dim testCase As Variant
+	Set testCaseNext = testCases.getFirst()
+	While Not testCaseNext Is Nothing
+		Set testCase = testCaseNext
+		Set testCaseNext = testCases.getNext()
+		
+		Dim result As TestResult
+		Set result = testCase.run()
+		Call htmlReport.appendTestResult( result )
+	Wend
+	
+	GoTo finally
+catch:
+	MsgBox getErrorDetailed( {} )
+	Resume Next
+finally:
+	On Error Resume Next
+	
+	Call htmlReport.showReport()
+End Sub
