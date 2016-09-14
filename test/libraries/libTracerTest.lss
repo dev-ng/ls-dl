@@ -1,0 +1,163 @@
+Option Public
+Option Declare
+Use "libTestCase"
+Use "libTracer"
+Class libTracerTest As TestCase
+	'------------------------------
+	Private Function runTest() As Variant
+		registerModule "TESTlibTracerReport"
+		Call testTraceInOutAndReport()
+		Call testTraceLogging()
+	End Function
+	'------------------------------
+	Private Sub testTraceInOutAndReport()
+		Call me.tearDown()
+		Call me.setUp()
+		Call ab()
+		Dim expected As String
+		expected = {TESTlibTracerReport->AB calls: 1 time:} _
+		& "new=line" & {    TESTlibTracerReport->CD calls: 2 time:} _
+		& "new=line" & {        TESTlibTracerReport->EF calls: 6 time:} _
+		& "new=line" & {    TESTlibTracerReport->EF calls: 1 time:}
+		
+		Dim result As String
+		result = getTraceReport()
+		
+		Call me.assertStringEquals( expected, result )
+	End Sub
+	'------------------------------
+	Private Sub ab()
+		traceIn
+		Call cd()
+		Call ef()
+		Call cd()
+		traceOut
+	End Sub
+	'------------------------------
+	Private Sub cd()
+		traceIn
+		Call ef()
+		Call ef()
+		Call ef()
+		traceOut
+	End Sub
+	'------------------------------
+	Private Sub ef()
+		traceIn
+		traceOut
+	End Sub
+	'------------------------------
+	Private Sub testTraceLogging()
+		Call me.tearDown()
+		Call me.setUp()
+		Call setLogLevel( "ALL", LL_NONE )
+		Call setLogLevel( "TreenodeTracer", LL_DEBUG )
+		Dim o As LoggerTest
+		Set o = New LoggerTest()
+		o.testLoggerResult = ""
+		Call setLogger( o )
+		
+		Call me.assertStringEquals( "", o.testLoggerResult )
+		
+		Call cd()
+		Dim expected As String
+		expected = {,[DEBUG][TREENODETRACER->TRACEIN] --> TESTlibTracerReport->CD} _
+		& {,[DEBUG][TREENODETRACER->TRACEIN] --> TESTlibTracerReport->EF} _
+		& {,[DEBUG][TREENODETRACER->TRACEOUT] <-- TESTlibTracerReport->EF} _
+		& {,[INFO][TREENODETRACER->TRACEOUT] TESTlibTracerReport->EF - time} _
+		& {,[DEBUG][TREENODETRACER->TRACEIN] --> TESTlibTracerReport->EF} _
+		& {,[DEBUG][TREENODETRACER->TRACEOUT] <-- TESTlibTracerReport->EF} _
+		& {,[INFO][TREENODETRACER->TRACEOUT] TESTlibTracerReport->EF - time} _
+		& {,[DEBUG][TREENODETRACER->TRACEIN] --> TESTlibTracerReport->EF} _
+		& {,[DEBUG][TREENODETRACER->TRACEOUT] <-- TESTlibTracerReport->EF} _
+		& {,[INFO][TREENODETRACER->TRACEOUT] TESTlibTracerReport->EF - time} _
+		& {,[DEBUG][TREENODETRACER->TRACEOUT] <-- TESTlibTracerReport->CD} _
+		& {,[INFO][TREENODETRACER->TRACEOUT] TESTlibTracerReport->CD - time}
+		
+		Dim result As String
+		result = o.testLoggerResult
+		
+		Call me.assertStringEquals( expected, result )
+	End Sub
+	'------------------------------
+	Private Sub setUp()
+		Dim o As TracerResourcesTest
+		Set o = New TracerResourcesTest()
+		Call setTracerResources( o )
+	End Sub
+	'------------------------------
+	Private Sub tearDown()
+	End Sub
+	'------------------------------
+End Class
+Class TracerResourcesTest As TracerResources
+	'------------------------------
+	Function getId( id As DynamicArguments ) As String
+		getId = id.toString( {->} )
+	End Function
+	'------------------------------
+	Function traceInText( id As DynamicArguments ) As String
+		traceInText = {--> } & me.getId( id )
+	End Function
+	'------------------------------
+	Function traceOutText( id As DynamicArguments ) As String
+		traceOutText = {<-- } & me.getId( id )
+	End Function
+	'------------------------------
+	Function durationText( id As DynamicArguments, dur As Long ) As String
+		durationText = me.getId( id ) & { - time}
+	End Function
+	'------------------------------
+	Function formatTime( argTimeInMs As Long ) As String
+		formatTime = TracerResources..formatTime( argTimeInMs )
+	End Function
+	'------------------------------
+	Function reportLine( id As DynamicArguments, calls As Long, dur As Long ) As String
+		reportLine = id.toString( "->" ) & { calls: } & CStr( calls ) & { time:}
+	End Function
+	'------------------------------
+	Function reportNewLine() As String
+		reportNewLine = "new=line"
+	End Function
+	'------------------------------
+	Function reportIndent() As String
+		reportIndent = {    }
+	End Function
+	'------------------------------
+End Class
+Class LoggerTest As Logger
+	Public testLoggerResult As String
+	'------------------------------
+	Sub assert( msg As String, id As DynamicArguments )
+		Call me.output( {[ASSERT]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub Error( msg As String, id As DynamicArguments )
+		Call me.output( {[ERROR]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub warn( msg As String, id As DynamicArguments )
+		Call me.output( {[WARN]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub info( msg As String, id As DynamicArguments )
+		Call me.output( {[INFO]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub debug( msg As String, id As DynamicArguments )
+		Call me.output( {[DEBUG]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Sub verbose( msg As String, id As DynamicArguments )
+		Call me.output( {[VERBOSE]} & me.getModuleName( id ) & msg )
+	End Sub
+	'------------------------------
+	Private Function getModuleName( id As DynamicArguments ) As String
+		getModuleName = {[} & StrRight( id.toString( {->} ), {->} ) & {] }
+	End Function
+	'------------------------------
+	Private Sub Output( msg As String )
+		me.testLoggerResult = me.testLoggerResult & {,} & msg
+	End Sub
+	'------------------------------
+End Class
