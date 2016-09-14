@@ -1,0 +1,50 @@
+Option Public
+Option Declare
+Use "libTestCase"
+Use "libDynamicArguments"
+Class libDynamicArgumentsTest As TestCase
+	Private o As DynamicArguments
+	'------------------------------
+	Private Function runTest() As Variant
+		Call testCount()
+		Call testToString()
+		Call testToArray()
+	End Function
+	'------------------------------
+	Private Function testCount()
+		Set me.o = New DynamicArguments()
+		Call me.assertTrue( 0 = me.o.count )
+		Call me.o.in(11).in(22).in(33)
+		Call me.assertTrue( 3 = o.count )
+		Call o.in("44")
+		Call me.assertTrue( 4 = o.count )
+	End Function
+	'------------------------------
+	Private Sub testToString()
+		Call me.tearDown()
+		Call me.setUp()
+		Call me.assertStringEquals( {11:22:33}, Me.o.toString( ":" ) )
+		Call o.in(55)
+		Call me.assertStringEquals( {11 - 22 - 33 - 55}, Me.o.toString( " - " ) )
+	End Sub
+	'------------------------------
+	Private Sub testToArray()
+		Call me.tearDown()
+		Call me.setUp()
+		Call me.assertStringEquals( {11**22**33}, Join( Me.o.toArray(), "**" ) )
+		Call o.in(9)
+		Call me.assertStringEquals( {11!!!22!!!33!!!9}, Join( Me.o.toArray(), "!!!" ) )
+		Call o.in(781)
+		Call me.assertStringEquals( {11 22 33 9 781}, Join( Me.o.toArray(), " " ) )
+	End Sub
+	'------------------------------
+	Private Sub setUp()
+		Set me.o = New DynamicArguments()
+		Call me.o.in(11).in(22).in(33)
+	End Sub
+	'------------------------------
+	Private Sub tearDown()
+		Delete o
+	End Sub
+	'------------------------------
+End Class
