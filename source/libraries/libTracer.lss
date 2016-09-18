@@ -301,7 +301,7 @@ Sub Initialize
 End Sub
 Private Function getTracerResources() As TracerResources
 	If gl_tracerResources Is Nothing Then
-		Set gl_tracerResources = classInstanceFactory( LIB_CONFIG_NAME, CLASS_TRACER )
+		Set gl_tracerResources = classOverloadFactory( LIB_CONFIG_NAME, CLASS_TRACER )
 		If gl_tracerResources Is Nothing Then
 			Set gl_tracerResources = New TracerResources()
 		End If
