@@ -3,6 +3,13 @@
 Error handling, logging, tracing and unit testing in Lotus Script.
 Easy, flexible, extensible.
 
+## Registering module (library, agent, form,...) name
+Important is to register your library, agent, etc in the system to let properly show stack trace, control logging level and do correct tracing.
+
+```lss
+	registerModule "YOURMODULENAME"
+```
+
 ## Error handling
 ```lss
 Sub test()
