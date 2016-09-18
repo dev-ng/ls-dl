@@ -4,7 +4,7 @@ Error handling, logging, tracing and unit testing in Lotus Script.
 Easy, flexible, extensible.
 
 Snippet error handling:
-```vb
+```lss
 Sub test()
 	On Error GoTo catch
 	
@@ -14,5 +14,21 @@ Sub test()
 catch:
 	throwException
 finally:
+End Sub
+```
+
+Snippet tracing:
+```lss
+Sub test()
+	traceIn
+	On Error GoTo catch
+	
+	
+	
+	GoTo finally
+catch:
+	throwException
+finally:
+	traceOut
 End Sub
 ```
