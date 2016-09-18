@@ -46,3 +46,5 @@ End Sub
 
 ## Demo
 [lssdemo.nsf](../demo/lsdldemo20160918.zip)
+
+![alt text](../demo/lsdl_demo1_1.gif "Error stack report")
