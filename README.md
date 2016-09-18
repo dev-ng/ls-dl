@@ -59,3 +59,11 @@ Trace report with timings in a messagebox
 Logging redirected to a file
 
 ![Demo 1 - logging example](../master/demo/lsdl_demo1_3.gif "Logging")
+
+Detailed messages in stack:
+
+![Demo 2 - error details](../master/demo/lsdl_demo2_1.gif "Error stack report")
+
+Logging redirected to status bar:
+
+![Demo 2 - logging to status bar](../master/demo/lsdl_demo2_2.gif "Logging")
