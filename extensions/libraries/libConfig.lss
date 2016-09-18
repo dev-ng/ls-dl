@@ -5,43 +5,10 @@ Use "libLog"
 Use "libLoggerPrint"
 Use "libLogConfig"
 Use "libTracer"
-Class ErrorStackReportHtml As ErrorStackReport
-	'------------------------------
-	Private Function lineSeparator()
-		lineSeparator = {<br>}
-	End Function
-	'------------------------------
-	Private Function indent()
-		indent = {&nbsp;&nbsp;&nbsp;&nbsp;}
-	End Function
-	'------------------------------
-	Private Function getReportHeader()
-		getReportHeader = {Sh*t happened...}
-	End Function
-	'------------------------------
-	Private Function errorDetailsToReportLine( argErrorDetails As ErrorDetails, argErrorDetailsPrev As ErrorDetails ) As String
-		errorDetailsToReportLine = me.indent() & {at line <b>} & argErrorDetails.errLine & {</b> in } & argErrorDetails.proc
-		
-		If argErrorDetails.isModuleValid() Then
-			errorDetailsToReportLine = errorDetailsToReportLine & { (} & argErrorDetails.module & {)}
-		End If
-		
-		If Not "" = argErrorDetails.errNumber Then
-			If Not argErrorDetailsPrev.errNumber = argErrorDetails.errNumber Then
-				errorDetailsToReportLine = errorDetailsToReportLine & { error <b>} & argErrorDetails.errNumber & {</b>}
-			End If
-		End If
-		
-		If Not "" = argErrorDetails.msg Then
-			errorDetailsToReportLine = errorDetailsToReportLine & { - } & argErrorDetails.msg
-		End If
-	End Function
-	'------------------------------
-End Class
 Sub libConfigInit()
 	Call overloadDefaultClass( CLASS_LOGGER, "LoggerPrint" )
 	Call libLoggerPrint_init()
-	'Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, "ErrorStackReportHtml" )
+	'Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, CLASS_ERROR_STACK_REPORT )
 	'Call overloadDefaultClass( CLASS_TRACER, CLASS_TRACER )
 	Call libLogConfig_init()
 End Sub
