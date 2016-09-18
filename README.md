@@ -52,11 +52,11 @@ Stack trace in a messagebox:
 
 ![Demo 1 - error details](../master/demo/lsdl_demo1_1.gif "Error stack report")
 
-Trace report with timings in a messagebox
+Trace report with timings in a messagebox:
 
 ![Demo 1 - trace report](../master/demo/lsdl_demo1_2.gif "Trace report")
 
-Logging redirected to a file
+Logging redirected to a file with error stack and tracing info:
 
 ![Demo 1 - logging example](../master/demo/lsdl_demo1_3.gif "Logging")
 
