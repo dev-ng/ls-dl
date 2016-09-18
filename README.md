@@ -50,8 +50,12 @@ For use in a class - inherit your class from class "Loggable".
 ## Unit testing
 To test your library (UI on Client):
 
-1. Create a button in your Toolbar with code: @Command([RunAgent]; "agUnitsTester" ). Select your Notes application and use this button when you want to start unit testing
-2. For every library you want to test create a unit test library with same name as your library + "Test" at end
+1. Create a button in your Toolbar with code: @Command([RunAgent]; "agUnitsTester" ). Select your Notes application and use this button when you want to start unit testing.
+2. For every library you want to test create a unit test library with same name as your library + "Test" at end.
+3. Use libTestCase and your library in test library.
+4. Create class with same name as your test library. Inherit this class from "TestCase" class.
+5. Override method "runTest()" in your test class.
+6. For every functionality/routine you want to test create a "testXXX" method. Call all these methods from "runTest".
 
 Library: YOURLIBTest
 ```lss
@@ -81,7 +85,7 @@ Unit testing passed:
 
 Unit testing failed:
 
-![Unit testing - fail](../master/demo/lsdl_ut_fail.gif "Unit testing failed")
+![Unit testing - fail](../master/demo/lsdl_ut_f.gif "Unit testing failed")
 
 ## Demo
 Download demo: [lssdemo.nsf](../master/demo/lsdldemo20160918.zip)
