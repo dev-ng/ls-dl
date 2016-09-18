@@ -60,12 +60,12 @@ Class YOURLIBTest As TestCase
 	End Function
 	'------------------------------
 	Private Sub testYOURFUNCTION()
-		Call me.assertStringEquals( {123}, YOURFUNCTION( 456 ) )
+		Call assertStringEquals( {123}, YOURFUNCTION( 456 ) )
 	End Sub
 	'------------------------------
 	Private Sub testYOURFUNCTION1()
-		Call me.assertIsNotNothing( YOURFUNCTION1() )
-		Call assert
+		Call assertIsNotNothing( YOURFUNCTION1() )
+		Call assertTrue( Not YOURFUNCTION1() Is Nothing )
 	End Sub
 	'------------------------------
 End Class
