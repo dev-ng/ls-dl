@@ -1,6 +1,10 @@
 Option Public
 Option Declare
 Use "libLog"
+'Redirects all logging to status bar (to "log.nsf" if runs on server)
+'To log additionally in "log.nsf" when runs on client - set "notes.ini" variable "LogStatusBar=1"
+'To redirect logging to a file use "notes.ini" variable "Debug_Outfile=c:\temp\StatusBarLogging.txt"
+'https://www.ibm.com/support/knowledgecenter/SSKTMJ_8.5.3/com.ibm.help.domino.admin85.doc/H_WRITING_STATUS_BAR_HISTORY_TO_A_LOG_FILE_STEPS.html
 Class LoggerPrint As Logger
 	'------------------------------
 	Sub assert( msg As String, id As DynamicArguments )
