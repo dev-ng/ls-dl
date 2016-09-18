@@ -48,6 +48,10 @@ For use in a class - inherit your class from class "Traceable".
 For use in a class - inherit your class from class "Loggable".
 
 ## Unit testing
+To test your library (UI on Client):
+1. Create a button in your Toolbar with code: @Command([RunAgent]; "agUnitsTester" ). Select your Notes application and use this button when you want to start unit testing
+2. For every library you want to test create a unit test library with same name as your library + "Test" at end
+
 Library: YOURLIBTest
 ```lss
 Use "libTestCase"
@@ -70,6 +74,13 @@ Class YOURLIBTest As TestCase
 	'------------------------------
 End Class
 ```
+Unit testing passed:
+
+![Unit testing - ok](../master/demo/lsdl_ut_ok.gif "Unit testing passed")
+
+Unit testing failed:
+
+![Unit testing - fail](../master/demo/lsdl_ut_fail.gif "Unit testing failed")
 
 ## Demo
 Download demo: [lssdemo.nsf](../master/demo/lsdldemo20160918.zip)
