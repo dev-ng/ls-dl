@@ -67,3 +67,6 @@ Detailed messages in stack:
 Logging redirected to status bar:
 
 ![Demo 2 - logging to status bar](../master/demo/lsdl_demo2_2.gif "Logging")
+
+## License
+All files are covered by the MIT license, see [LICENSE](../master/licence.md).
