@@ -61,7 +61,8 @@ Class Loggable As Throwable
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -81,7 +82,8 @@ finally:
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -101,7 +103,8 @@ finally:
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -121,7 +124,8 @@ finally:
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -141,7 +145,8 @@ finally:
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -161,7 +166,8 @@ finally:
 		
 		GoTo finally
 catch:
-		throwException
+		Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+		Resume finally
 finally:
 	End Sub
 	'------------------------------
@@ -228,7 +234,7 @@ End Class
 Sub Initialize
 	registerModule "libLog"
 End Sub
-'to be used only in "libLogConfig"
+'to be used in "libLogConfig"
 'sets logging level for specified module
 '@param module - Example: "library.class.procedure"
 '@param level - Example: LL_NONE, LL_ASSERT, LL_ERROR, ..., LL_DEBUG, LL_VERBOSE, LL_ALL
@@ -268,7 +274,8 @@ Sub logError( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
 Sub logAssert( msg As String )
@@ -285,7 +292,8 @@ Sub logAssert( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
 Sub logWarn( msg As String )
@@ -302,7 +310,8 @@ Sub logWarn( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
 Private Function L As Logger
@@ -328,7 +337,8 @@ Sub logDebug( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
 'allows to override default Logger
@@ -349,7 +359,8 @@ Sub logInfo( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
 Private Function isLoggingAllowed( module As String, proc As String, lLevel As Byte ) As Boolean
@@ -409,6 +420,7 @@ Sub logVerbose( msg As String )
 	
 	GoTo finally
 catch:
-	throwException
+	Print Error & Chr(10) & { at line } & CStr( Erl ) & { in } & GetThreadInfo(1) & { #} & Cstr( Err )
+	Resume finally
 finally:
 End Sub
