@@ -8,7 +8,7 @@ Snippet error handling:
 Sub test()
 	On Error GoTo catch
 	
-	
+	'...
 	
 	GoTo finally
 catch:
@@ -23,10 +23,11 @@ Sub test()
 	traceIn
 	On Error GoTo catch
 	
-	
+	'...
 	
 	GoTo finally
 catch:
+	traceOut
 	throwException
 finally:
 	traceOut
