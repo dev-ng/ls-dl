@@ -49,10 +49,13 @@ Download demo: [lssdemo.nsf](../master/demo/lsdldemo20160918.zip)
 
 ### Screenshots
 Stack trace in a messagebox:
+
 ![Demo 1 - error details](../master/demo/lsdl_demo1_1.gif "Error stack report")
 
 Trace report with timings in a messagebox
+
 ![Demo 1 - trace report](../master/demo/lsdl_demo1_2.gif "Trace report")
 
 Logging redirected to a file
-![Demo 1 - logging example](../master/demo/lsdl_demo1_2.gif "Logging")
+
+![Demo 1 - logging example](../master/demo/lsdl_demo1_3.gif "Logging")
