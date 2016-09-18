@@ -10,20 +10,8 @@ Sub libLogConfig_init()
 		Exit Sub
 	End If
 	
-	Call setLogLevel( "ALL", LL_DEBUG )
-	Call setLogLevel( "libT", LL_INFO )
-	'Call setLogLevel( "libT||ttt", LL_DEBUG )
-	Call setLogLevel( "agttt", LL_ERROR )
-	Call setLogLevel( "agttt|Mc", LL_WARN )
-	Call setLogLevel( "agttt|Mc|testMe", LL_DEBUG )
-	Call setLogLevel( "ALL", LL_NONE )
-	'Call setLogLevel( "ALL", LL_WARN )
-	'Call setLogLevel( "ALL", LL_ALL )
-	Call setLogLevel( "ALL", LL_NONE )
-	Call setLogLevel( "agttt||ATTT", LL_ALL )
-	Call setLogLevel( "libTracer", LL_INFO )
-	Call setLogLevel( "libTracer", LL_DEBUG )
 	Call setLogLevel( "ALL", LL_WARN )
-	
+	'Call setLogLevel( "libTracer", LL_DEBUG )
+
 	gl_isInitialyzed  = "yes"
 End Sub
