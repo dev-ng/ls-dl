@@ -16,6 +16,7 @@ catch:
 finally:
 End Sub
 ```
+For use in a class - inherit your class from class "Throwable".
 
 ## Tracing
 ```lss
@@ -33,6 +34,7 @@ finally:
 	traceOut
 End Sub
 ```
+For use in a class - inherit your class from class "Traceable".
 
 ## Logging
 ```lss
@@ -42,6 +44,31 @@ End Sub
 	logInfo ""
 	logDebug ""
 	logVerbose ""
+```
+For use in a class - inherit your class from class "Loggable".
+
+## Unit testing
+Library: YOURLIBTest
+```lss
+Use "libTestCase"
+Use "YOURLIB"
+Class YOURLIBTest As TestCase
+	'------------------------------
+	Private Function runTest() As Variant
+		Call testYOURFUNCTION()
+		Call testYOURFUNCTION1()
+	End Function
+	'------------------------------
+	Private Sub testYOURFUNCTION()
+		Call me.assertStringEquals( {123}, YOURFUNCTION( 456 ) )
+	End Sub
+	'------------------------------
+	Private Sub testYOURFUNCTION1()
+		Call me.assertIsNotNothing( YOURFUNCTION1() )
+		Call assert
+	End Sub
+	'------------------------------
+End Class
 ```
 
 ## Demo
