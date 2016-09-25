@@ -1,14 +1,6 @@
 Option Public
 Option Declare
-Use "libError"
-Use "libLog"
-Use "libLoggerPrint"
-Use "libLogConfig"
-Use "libTracer"
+Use "libDLBase"
 Sub libConfigInit()
-	Call overloadDefaultClass( CLASS_LOGGER, "LoggerPrint" )
-	Call libLoggerPrint_init()
-	'Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, CLASS_ERROR_STACK_REPORT )
-	'Call overloadDefaultClass( CLASS_TRACER, CLASS_TRACER )
-	Call libLogConfig_init()
+	Call overloadDefaultClass( "Logger", "libLoggerPrint", "LoggerPrint" )
 End Sub
