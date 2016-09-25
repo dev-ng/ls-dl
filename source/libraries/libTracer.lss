@@ -64,7 +64,7 @@ Private Class StopwatchLS As Stopwatch
 	End Function
 	'------------------------------
 End Class
-Private Class TracableRoutine
+Private Class TraceableRoutine
 	Public id As DynamicArguments
 	Private sw As Stopwatch
 	Public calls As Long
@@ -163,7 +163,7 @@ Private Class TreeNodeTracer As Loggable
 		End If
 		
 		If me.root Is Nothing Then
-			Dim tr As New TracableRoutine( id )
+			Dim tr As New TraceableRoutine( id )
 			Set me.root = New TreeNode( tr )
 			Set me.current = me.root
 		Else
@@ -171,14 +171,14 @@ Private Class TreeNodeTracer As Loggable
 				Set me.current = me.root
 			Else
 				If me.current.firstChild Is Nothing Then
-					Dim tr1 As New TracableRoutine( id )
+					Dim tr1 As New TraceableRoutine( id )
 					Set me.current = me.current.appendChild( tr1 )
 				Else
 					Dim iterator As TreeNodeIterator
 					Set iterator = me.current.iterator()
 					
 					Dim node As TreeNode
-					Dim tr2 As TracableRoutine
+					Dim tr2 As TraceableRoutine
 					Do While iterator.hasNext()
 						Set node = iterator.getNext()
 						Set tr2 = node.element
@@ -190,7 +190,7 @@ Private Class TreeNodeTracer As Loggable
 					Loop
 					
 					If Not me.current Is node Then
-						Dim tr3 As New TracableRoutine( id )
+						Dim tr3 As New TraceableRoutine( id )
 						Set me.current = me.current.appendChild( tr3 )
 					End If
 				End If
@@ -203,7 +203,7 @@ Private Class TreeNodeTracer As Loggable
 	Sub traceOut( id As DynamicArguments)
 		Call logDebug( getTracerResources().traceOutText( id ) )
 		
-		Dim tr As TracableRoutine
+		Dim tr As TraceableRoutine
 		Set tr = me.current.element
 		Dim dur As Long
 		dur = tr.out()
@@ -242,7 +242,7 @@ Class TreeNodeTracerReport
 			getR = getTracerResources().reportNewLine()
 		End If
 		
-		Dim tr As TracableRoutine
+		Dim tr As TraceableRoutine
 		Set tr = argNode.element
 		getR = getR & argOffset & reportLine( tr )
 		
@@ -256,7 +256,7 @@ Class TreeNodeTracerReport
 		Wend
 	End Function
 	'------------------------------
-	Private Function reportLine( tr As TracableRoutine ) As String
+	Private Function reportLine( tr As TraceableRoutine ) As String
 		reportLine = getTracerResources().reportLine( tr.id, tr.calls, tr.duration )
 	End Function
 	'------------------------------
@@ -301,22 +301,22 @@ Sub Initialize
 End Sub
 Private Function getTracerResources() As TracerResources
 	If gl_tracerResources Is Nothing Then
-		Set gl_tracerResources = classOverloadFactory( LIB_CONFIG_NAME, CLASS_TRACER )
+		Set gl_tracerResources = classOverloadFactory( CLASS_TRACER )
 		If gl_tracerResources Is Nothing Then
 			Set gl_tracerResources = New TracerResources()
 		End If
 	End If
 	Set getTracerResources = gl_tracerResources
 End Function
+Function getTraceReport() As String
+	Dim report As New TreeNodeTracerReport()
+	getTraceReport = report.getReport()
+End Function
 Private Function getTracer() As TreeNodeTracer
 	If gl_tracer Is Nothing Then
 		Set gl_tracer = New TreeNodeTracer()
 	End If
 	Set getTracer = gl_tracer
-End Function
-Function getTraceReport() As String
-	Dim report As New TreeNodeTracerReport()
-	getTraceReport = report.getReport()
 End Function
 Sub setTracerResources( argTracerRes As TracerResources )
 	Set gl_tracerResources = argTracerRes
@@ -332,14 +332,6 @@ Sub traceOut()
 	End If
 	
 	Call getTracer().traceOut( args.in( sModule ).in( sProc ) )
-End Sub
-Sub traceIn()
-	Dim sProc As String
-	Dim sModule As String
-	sModule = getModuleName( GetThreadInfo(11) )
-	sProc = GetThreadInfo(10)
-	
-	Call getTracer().traceIn( args.in( sModule ).in( sProc ) )
 End Sub
 Private Function formatTimeMs( argTimeInMs As Long ) As String
 	formatTimeMs = ""
@@ -369,6 +361,14 @@ Private Function formatTimeMs( argTimeInMs As Long ) As String
 	formatTimeMs = formatTimeMs & Format( CStr( t ), {00} )
 	tRest = tRest - ( t * 100 )
 End Function
+Sub traceIn()
+	Dim sProc As String
+	Dim sModule As String
+	sModule = getModuleName( GetThreadInfo(11) )
+	sProc = GetThreadInfo(10)
+	
+	Call getTracer().traceIn( args.in( sModule ).in( sProc ) )
+End Sub
 Function stopwatchFactory() As Stopwatch
 	On Error GoTo catch
 	
