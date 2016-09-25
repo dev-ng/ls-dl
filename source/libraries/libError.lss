@@ -270,13 +270,16 @@ Class ErrorDetails
 End Class
 Sub Initialize
 	registerModule "libError"
+	On Error Resume Next
+	Execute {use "libConfig"
+call libConfigInit()}
 End Sub
 Function getErrorDetailed( argDetails As String ) As String
 	getErrorDetailed = getErrorStackReport().getReportWithParams( argDetails, GetThreadInfo(10), GetThreadInfo(11), {} )
 End Function
-Private Function decodeNewLine( argText As String, argNewLine As String ) As String
-	decodeNewLine = Join( Split( argText, STACK_ERR_SEPARATOR ), argNewLine )
-End Function
+Sub setErrorStackReport( argReport As ErrorStackReport )
+	Set gl_errorStackReport = argReport
+End Sub
 Private Function getErrorStack( argDetails As String, argCallingProc As String, argCallingModule As String, argClassName As String ) As String
 	Dim o As New ErrorStackHelper()
 	Dim s As New NotesSession()
@@ -286,18 +289,18 @@ Private Function getErrorStack( argDetails As String, argCallingProc As String, 
 		getErrorStack = o.getErrorStackOnClient( argDetails, argCallingProc, argCallingModule, argClassName )
 	End If
 End Function
-Sub setErrorStackReport( argReport As ErrorStackReport )
-	Set gl_errorStackReport = argReport
+Private Function decodeNewLine( argText As String, argNewLine As String ) As String
+	decodeNewLine = Join( Split( argText, STACK_ERR_SEPARATOR ), argNewLine )
+End Function
+Sub throwExceptionDetailed( argDetails As String )
+	Error Err, getErrorStack( argDetails, GetThreadInfo(10), GetThreadInfo(11), {} )
 End Sub
 Sub throwException()
 	Error Err, getErrorStack( {}, GetThreadInfo(10), GetThreadInfo(11), {}  )
 End Sub
-Sub throwExceptionDetailed( argDetails As String )
-	Error Err, getErrorStack( argDetails, GetThreadInfo(10), GetThreadInfo(11), {} )
-End Sub
 Private Function getErrorStackReport() As ErrorStackReport
 	If gl_errorStackReport Is Nothing Then
-		Set gl_errorStackReport = classOverloadFactory( LIB_CONFIG_NAME, CLASS_ERROR_STACK_REPORT )
+		Set gl_errorStackReport = classOverloadFactory( CLASS_ERROR_STACK_REPORT )
 		If gl_errorStackReport Is Nothing Then
 			Set gl_errorStackReport = New ErrorStackReport()
 		End If
