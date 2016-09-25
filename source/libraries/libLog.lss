@@ -316,7 +316,7 @@ finally:
 End Sub
 Private Function L As Logger
 	If gl_logger Is Nothing Then
-		Set gl_logger = classOverloadFactory( LIB_CONFIG_NAME, CLASS_LOGGER )
+		Set gl_logger = classOverloadFactory( CLASS_LOGGER )
 		If gl_logger Is Nothing Then
 			Set gl_logger = New Logger()
 		End If
