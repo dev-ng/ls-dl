@@ -2,20 +2,19 @@ Option Public
 Option Declare
 Private gl_modules List As String
 Public gl_dummyO As Variant 'for Execute/dynamic load
+Private gl_overloadLibraryNames List As String
 Private gl_overloadClassNames List As String
 Public Const CIFACTORY_FAIL_SILENT = True
 Public Const CIFACTORY_FAIL_NORMAL = False
 Public Const LIB_CONFIG_NAME = "libConfig"
 Sub Initialize
 	registerModule "libDLBase"
-	On Error Resume Next
-	Execute {use "libConfig"
-call libConfigInit()}
 End Sub
-Public Sub overloadDefaultClass( argDefault As String, argOverload As String )
+Public Sub overloadDefaultClass( argDefault As String, argOverloadLib As String, argOverload As String )
+	gl_overloadLibraryNames( argDefault ) = argOverloadLib
 	gl_overloadClassNames( argDefault ) = argOverload
 End Sub
-Function classOverloadFactory( argLSLibraryName As String, argClassName As String ) As Variant
+Function classOverloadFactory( argClassName As String ) As Variant
 	On Error Resume Next
 	
 	Dim sError As String
@@ -25,7 +24,9 @@ Function classOverloadFactory( argLSLibraryName As String, argClassName As Strin
 	
 	Set classOverloadFactory = Nothing
 	If IsElement( gl_overloadClassNames( argClassName ) ) Then
-		Set classOverloadFactory = classInstanceFactory( argLSLibraryName, gl_overloadClassNames( argClassName ) )
+		Set classOverloadFactory = classInstanceFactory( gl_overloadLibraryNames( argClassName ), gl_overloadClassNames( argClassName ) )
+		Execute {use "} & gl_overloadLibraryNames( argClassName ) & {"
+Call } & gl_overloadLibraryNames( argClassName ) & {_init()}
 	End If
 	
 	If Not ( Err = iErr And Error = sError ) Then
