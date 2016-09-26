@@ -1,17 +1,7 @@
 Option Public
 Option Declare
 Use "libLog"
-Private gl_isInitialyzed As String
-Sub Initialize
-	Call libLogConfig_init()
-End Sub
-Sub libLogConfig_init()
-	If "yes" = gl_isInitialyzed Then
-		Exit Sub
-	End If
-	
+Sub libLogConfigInit()
 	Call setLogLevel( "ALL", LL_WARN )
 	'Call setLogLevel( "libTracer", LL_DEBUG )
-
-	gl_isInitialyzed  = "yes"
 End Sub
