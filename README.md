@@ -54,6 +54,17 @@ For use in a class - inherit your class from class "Traceable".
 ```
 For use in a class - inherit your class from class "Loggable".
 
+Logging provides an interface to send messages to an abstract receiver-Logger.
+Such a receiver could be:
+- your existing log storage - you just need to implement a wrapper
+- status bar - see libLoggerPrint in extentions folder
+- log.nsf
+- a file in the file system
+- java console - unfortunately is buggy as of 9.0.1 FP6 and fails in a complex application (crashes when one agent calls another), but still can be used for testing in some cases during development phase
+- ...
+
+Idea for improvement - implement dynamic switch of Loggers from the UI. I.e. when debugging on a user's client with few clicks, without modifying the code, change Logger to another one as well as logging levels for this particular user to needed ones.
+
 ## Unit testing
 To test your library (UI on Client):
 
