@@ -65,6 +65,8 @@ Such a receiver could be:
 
 Idea for improvement - implement dynamic switch of Loggers from the UI. I.e. when debugging on a user's client with few clicks, without modifying the code, change Logger to another one as well as logging levels for this particular user to needed ones.
 
+Another idea for improvement - implement logging in a format that is supported by log analysers.
+
 ## Unit testing
 To test your library (UI on Client):
 
