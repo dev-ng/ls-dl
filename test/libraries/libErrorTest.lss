@@ -59,7 +59,7 @@ finally:
 		& Chr(10) & {        at line 46 in TESTERROR - get detailed} _
 		& Chr(10) & {        at line 4 in RUNTEST}
 		
-		Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, CLASS_ERROR_STACK_REPORT )
+		'Call overloadDefaultClass( CLASS_ERROR_STACK_REPORT, CLASS_ERROR_STACK_REPORT )
 		Call setErrorStackReport( Nothing)
 		
 		Dim result As String
