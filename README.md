@@ -106,7 +106,7 @@ Unit testing failed:
 ![Unit testing - fail](../master/demo/lsdl_ut_f.gif "Unit testing failed")
 
 ## Demo
-Download demo: [lssdemo.nsf](../master/demo/lsdldemo20160918.zip)
+Download demo: [lssdemo.nsf](../master/demo/lsdldemo20160926.zip)
 
 ### Screenshots
 Stack trace in a messagebox:
