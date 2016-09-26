@@ -316,6 +316,10 @@ finally:
 End Sub
 Private Function L As Logger
 	If gl_logger Is Nothing Then
+		On Error Resume Next
+		Execute {use "libLogConfig"
+call libLogConfigInit()}
+		
 		Set gl_logger = classOverloadFactory( CLASS_LOGGER )
 		If gl_logger Is Nothing Then
 			Set gl_logger = New Logger()
